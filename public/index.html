@@ -1,62 +1,145 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>جستجوی مدرک</title>
   <style>
-    body { font-family: sans-serif; direction: rtl; padding: 20px; }
-    .container { max-width: 520px; margin: auto; }
-    input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 8px; }
-    button { padding: 10px 16px; font-size: 16px; }
-    .msg { margin-top: 12px; color: #b00; }
-    img { max-width: 100%; margin-top: 12px; border: 1px solid #ddd; }
-    .download { display:inline-block; margin-top:8px; text-decoration:none; padding:8px 12px; border-radius:6px; border:1px solid #333; }
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Vazirmatn', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      direction: rtl;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      padding: 40px 50px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      font-size: 1.6rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      text-align: center;
+      margin-bottom: 15px;
+      transition: 0.3s;
+    }
+
+    input:focus {
+      box-shadow: 0 0 10px rgba(255,255,255,0.4);
+    }
+
+    button {
+      width: 100%;
+      background: #ffcc00;
+      color: #000;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ffe066;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+
+    #result img {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+
+    .success {
+      color: #cfffbe;
+    }
+    .error {
+      color: #ff9a9a;
+    }
+    a.download-btn {
+      display: inline-block;
+      background: #00ffcc;
+      color: #000;
+      margin-top: 10px;
+      padding: 8px 15px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    a.download-btn:hover {
+      background: #66ffd6;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>جستجوی مدرک با کد</h2>
-    <input id="code" placeholder="کد را وارد کنید" />
-    <button id="searchBtn">جستجو</button>
+    <h1>کد ملی خود را وارد کنید</h1>
+    <input type="text" id="searchInput" placeholder="مثلاً ۱۲۳۴۵۶۷۸۹۰" />
+    <button onclick="search()">جستجو</button>
     <div id="result"></div>
   </div>
 
   <script>
-    const btn = document.getElementById('searchBtn');
-    const codeInput = document.getElementById('code');
-    const result = document.getElementById('result');
+    async function search() {
+      const code = document.getElementById("searchInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
 
-    async function doSearch() {
-      result.innerHTML = '';
-      const code = codeInput.value.trim();
-      if (!code) { result.innerHTML = '<div class="msg">لطفاً شماره را وارد کنید</div>'; return; }
+      if (!code) {
+        resultDiv.innerHTML = '<p class="error">لطفاً کد ملی را وارد کنید.</p>';
+        return;
+      }
 
       try {
-        const resp = await fetch(`/api/search?code=${encodeURIComponent(code)}`);
-        const data = await resp.json();
-        if (!data.ok) {
-          result.innerHTML = `<div class="msg">${data.message || 'یافت نشد'}</div>`;
+        const res = await fetch(`/api/search?code=${code}`);
+        const data = await res.json();
+
+        if (data.ok) {
+          resultDiv.innerHTML = `
+            <p class="success">مدرک یافت شد ✅</p>
+            <img src="${data.url}" alt="مدرک" />
+            <a href="/download/${code}" class="download-btn">دانلود مدرک</a>
+          `;
         } else {
-          const img = document.createElement('img');
-          img.src = data.url;
-          img.alt = 'تصویر مدرک';
-          const a = document.createElement('a');
-          a.href = `/download/${encodeURIComponent(code)}`;
-          a.className = 'download';
-          a.innerText = 'دانلود تصویر';
-          result.appendChild(img);
-          result.appendChild(a);
+          resultDiv.innerHTML = `<p class="error">${data.message}</p>`;
         }
-      } catch (e) {
-        console.error(e);
-        result.innerHTML = '<div class="msg">خطا در ارتباط با سرور</div>';
+      } catch (err) {
+        resultDiv.innerHTML = '<p class="error">خطایی رخ داده است.</p>';
       }
     }
-
-    btn.onclick = doSearch;
-    codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
   </script>
 </body>
 </html>
-    
