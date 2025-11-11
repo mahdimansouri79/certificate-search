@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>جستجوی مدرک</title>
+  <style>
+    body { font-family: sans-serif; direction: rtl; padding: 20px; }
+    .container { max-width: 520px; margin: auto; }
+    input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 8px; }
+    button { padding: 10px 16px; font-size: 16px; }
+    .msg { margin-top: 12px; color: #b00; }
+    img { max-width: 100%; margin-top: 12px; border: 1px solid #ddd; }
+    .download { display:inline-block; margin-top:8px; text-decoration:none; padding:8px 12px; border-radius:6px; border:1px solid #333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>جستجوی مدرک با کد</h2>
+    <input id="code" placeholder="کد را وارد کنید" />
+    <button id="searchBtn">جستجو</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('searchBtn');
+    const codeInput = document.getElementById('code');
+    const result = document.getElementById('result');
+
+    async function doSearch() {
+      result.innerHTML = '';
+      const code = codeInput.value.trim();
+      if (!code) { result.innerHTML = '<div class="msg">لطفاً شماره را وارد کنید</div>'; return; }
+
+      try {
+        const resp = await fetch(`/api/search?code=${encodeURIComponent(code)}`);
+        const data = await resp.json();
+        if (!data.ok) {
+          result.innerHTML = `<div class="msg">${data.message || 'یافت نشد'}</div>`;
+        } else {
+          const img = document.createElement('img');
+          img.src = data.url;
+          img.alt = 'تصویر مدرک';
+          const a = document.createElement('a');
+          a.href = `/download/${encodeURIComponent(code)}`;
+          a.className = 'download';
+          a.innerText = 'دانلود تصویر';
+          result.appendChild(img);
+          result.appendChild(a);
+        }
+      } catch (e) {
+        console.error(e);
+        result.innerHTML = '<div class="msg">خطا در ارتباط با سرور</div>';
+      }
+    }
+
+    btn.onclick = doSearch;
+    codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+  </script>
+</body>
+</html>
